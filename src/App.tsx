@@ -25,6 +25,9 @@ type PaneParams = {
   rippleDecay: number
   rippleWavelength: number
   rippleDuration: number
+  enableRain: boolean
+  rainIntensity: number
+  rainVariation: number
 }
 
 type SettersMap = {
@@ -99,6 +102,8 @@ function highlightCode(code: string): React.ReactNode[] {
 const SAMPLE_IMAGES = [
   '/z.png',
   '/react-logo.png',
+  '/kukai-art-ZlC0wis-JeY-unsplash.jpg',
+  '/amanda-dalbjorn-UbJMy92p8wk-unsplash.jpg',
   '/deep-pMfqcyzTB9c-unsplash.jpg',
   '/alexander-krivitskiy-o7wiNx9x9OQ-unsplash.jpg',
   '/vite.svg',
@@ -136,6 +141,11 @@ function App() {
   const [rippleDecay, setRippleDecay] = useState(2)
   const [rippleWavelength, setRippleWavelength] = useState(40)
   const [rippleDuration, setRippleDuration] = useState(2000)
+
+  // Rain settings
+  const [enableRain, setEnableRain] = useState(false)
+  const [rainIntensity, setRainIntensity] = useState(3)
+  const [rainVariation, setRainVariation] = useState(0.3)
 
   const paneContainerRef = useRef<HTMLDivElement>(null)
   const paneRef = useRef<Pane | null>(null)
@@ -205,6 +215,9 @@ function App() {
       rippleDecay: setRippleDecay,
       rippleWavelength: setRippleWavelength,
       rippleDuration: setRippleDuration,
+      enableRain: setEnableRain,
+      rainIntensity: setRainIntensity,
+      rainVariation: setRainVariation,
     }
 
     const params: PaneParams = {
@@ -229,6 +242,9 @@ function App() {
       rippleDecay,
       rippleWavelength,
       rippleDuration,
+      enableRain,
+      rainIntensity,
+      rainVariation,
     }
     paramsRef.current = params
 
@@ -319,6 +335,12 @@ function App() {
     addBinding(rippleFolder, 'rippleWavelength', { min: 10, max: 100, step: 5 })
     addBinding(rippleFolder, 'rippleDuration', { min: 500, max: 5000, step: 100 })
 
+    // Rain folder
+    const rainFolder = pane.addFolder({ title: 'Rain' })
+    addBinding(rainFolder, 'enableRain')
+    addBinding(rainFolder, 'rainIntensity', { min: 1, max: 10, step: 0.5 })
+    addBinding(rainFolder, 'rainVariation', { min: 0, max: 1, step: 0.05 })
+
     return () => pane.dispose()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -349,6 +371,11 @@ function MyComponent() {
         wavelength: ${rippleWavelength},
         duration: ${rippleDuration},
       }}
+      enableRain={${enableRain}}
+      rainConfig={{
+        intensity: ${rainIntensity},
+        variation: ${rainVariation},
+      }}
       style={{
         width: ${canvasWidth},
         height: ${canvasHeight},
@@ -359,19 +386,25 @@ function MyComponent() {
 
   return (
     <div className="app">
-      <h1>ASCII React</h1>
-
+      <div className="content">
+        <h1>ascii-img-react</h1>
+        <p>by <a href="https://zander.wtf">Zander Martineau</a></p>
+        <p><a href="https://github.com/mrmartineau/ascii-img-react">GitHub Repo</a></p>
+        <pre>$ npm install ascii-img-react</pre>
+        <p>Convert images to ASCII art with ripple animation effects. Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
+      </div>
       <div className="image-thumbnails">
         {SAMPLE_IMAGES.map((src) => (
           <button
-            key={src}
-            className={`thumbnail ${imageUrl === src ? 'active' : ''}`}
-            onClick={() => setImageUrl(src)}
+          key={src}
+          className={`thumbnail ${imageUrl === src ? 'active' : ''}`}
+          onClick={() => setImageUrl(src)}
           >
             <img src={src} alt="" />
           </button>
         ))}
       </div>
+      <p>Choose an image from the list above:</p>
 
       <div className="controls-container">
         <div className="controls" ref={paneContainerRef} />
@@ -400,6 +433,11 @@ function MyComponent() {
             wavelength: rippleWavelength,
             duration: rippleDuration,
           }}
+          enableRain={enableRain}
+          rainConfig={{
+            intensity: rainIntensity,
+            variation: rainVariation,
+          }}
           style={{
             width: canvasWidth,
             height: canvasHeight,
@@ -408,7 +446,7 @@ function MyComponent() {
           }}
         />
       </div>
-      <p>Click on the image to trigger ripple animation</p>
+      <p>Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
 
       <div className="code-section">
         <h2>Code</h2>

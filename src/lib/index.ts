@@ -3,14 +3,17 @@ export { CHARACTERS, NORMALIZED_CHARACTERS, normalizeCharacterVectors, type Char
 export { sampleCell, sampleGrid, sampleExternalCircles, rgbToLightness, type GridConfig, DEFAULT_GRID_CONFIG } from './sampling';
 export { findBestCharacter, CachedCharacterLookup, cachedLookup } from './lookup';
 export { applyGlobalContrast, applyDirectionalContrast, applyFullContrast } from './contrast';
-export { 
-  createRipple, 
-  calculateWaveValue, 
-  applyRippleToVector, 
-  pruneExpiredRipples, 
+export {
+  createRipple,
+  createRainDrop,
+  calculateWaveValue,
+  applyRippleToVector,
+  pruneExpiredRipples,
   hasActiveRipples,
   DEFAULT_RIPPLE_CONFIG,
-  type Ripple, 
-  type RippleConfig, 
-  type RippleState 
+  DEFAULT_RAIN_CONFIG,
+  type Ripple,
+  type RippleConfig,
+  type RippleState,
+  type RainConfig,
 } from './ripple';

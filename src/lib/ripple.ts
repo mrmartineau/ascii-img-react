@@ -42,6 +42,23 @@ export interface RippleState {
 }
 
 /**
+ * Configuration for rain animation effect
+ */
+export interface RainConfig {
+  /** Number of raindrops per second (default: 3) */
+  intensity: number;
+  /** Random variation in ripple parameters 0-1 (default: 0.3) */
+  variation: number;
+  /** Override ripple config for raindrops (optional) */
+  dropRippleConfig?: Partial<RippleConfig>;
+}
+
+export const DEFAULT_RAIN_CONFIG: RainConfig = {
+  intensity: 3,
+  variation: 0.3,
+};
+
+/**
  * Create a new ripple at the given position
  */
 export function createRipple(
@@ -162,4 +179,51 @@ export function hasActiveRipples(ripples: Ripple[], currentTime: number): boolea
     // Active if not yet started (elapsed < 0) or still running (elapsed <= duration)
     return elapsed <= ripple.config.duration;
   });
+}
+
+/**
+ * Apply random variation to a number
+ */
+function applyVariation(value: number, variation: number): number {
+  const range = value * variation;
+  return value + (Math.random() * 2 - 1) * range;
+}
+
+/**
+ * Create a raindrop ripple at a random position within the image bounds
+ * with optional random variation in ripple parameters for natural effect
+ */
+export function createRainDrop(
+  imageWidth: number,
+  imageHeight: number,
+  rainConfig: Partial<RainConfig> = {},
+  baseRippleConfig: Partial<RippleConfig> = {}
+): Ripple {
+  const config: RainConfig = { ...DEFAULT_RAIN_CONFIG, ...rainConfig };
+  const mergedRippleConfig: RippleConfig = {
+    ...DEFAULT_RIPPLE_CONFIG,
+    ...baseRippleConfig,
+    ...config.dropRippleConfig,
+  };
+
+  // Random position within image bounds
+  const x = Math.random() * imageWidth;
+  const y = Math.random() * imageHeight;
+
+  // Apply variation to ripple parameters for natural effect
+  const variation = config.variation;
+  const variedConfig: RippleConfig = {
+    speed: applyVariation(mergedRippleConfig.speed, variation),
+    amplitude: Math.max(0.1, Math.min(1, applyVariation(mergedRippleConfig.amplitude, variation))),
+    decay: applyVariation(mergedRippleConfig.decay, variation),
+    wavelength: applyVariation(mergedRippleConfig.wavelength, variation),
+    duration: applyVariation(mergedRippleConfig.duration, variation),
+  };
+
+  return {
+    originX: x,
+    originY: y,
+    startTime: performance.now(),
+    config: variedConfig,
+  };
 }
