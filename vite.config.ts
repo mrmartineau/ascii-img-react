@@ -33,6 +33,8 @@ export default defineConfig(({ mode }) => {
         },
         sourcemap: true,
         minify: false,
+        copyPublicDir: false,
+        emptyOutDir: true,
       },
     }
   }
