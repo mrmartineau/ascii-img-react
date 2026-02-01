@@ -206,6 +206,77 @@ const vector = sampleCell(imageData, col, row, DEFAULT_GRID_CONFIG);
 const char = lookup.findBest(vector);
 ```
 
+## CSS Variables
+
+The component exposes CSS custom properties for easy theming and style overrides:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `--ascii-font-family` | `monospace` | Font family for ASCII characters |
+| `--ascii-font-size` | `10px` | Font size (set via `fontSize` prop) |
+| `--ascii-line-height` | `0.8` | Line height (set via `lineHeight` prop) |
+| `--ascii-color` | `inherit` | Text color (set via `color` prop) |
+| `--ascii-background` | `transparent` | Background color (set via `backgroundColor` prop) |
+
+### Overriding via CSS
+
+You can override these variables in your stylesheet to theme all instances:
+
+```css
+/* Global theme */
+.ascii-art {
+  --ascii-font-family: 'Fira Code', monospace;
+  --ascii-color: #0f0;
+  --ascii-background: #111;
+}
+```
+
+```tsx
+<AsciiImage
+  src="/photo.jpg"
+  width={80}
+  className="ascii-art"
+/>
+```
+
+### Responsive styling
+
+CSS variables make it easy to adjust styles at different breakpoints:
+
+```css
+.ascii-responsive {
+  --ascii-font-size: 8px;
+}
+
+@media (min-width: 768px) {
+  .ascii-responsive {
+    --ascii-font-size: 12px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .ascii-responsive {
+    --ascii-font-size: 16px;
+  }
+}
+```
+
+### Dark/Light mode support
+
+```css
+.ascii-themed {
+  --ascii-color: #333;
+  --ascii-background: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ascii-themed {
+    --ascii-color: #0ff;
+    --ascii-background: #0a0a0a;
+  }
+}
+```
+
 ## Notes
 
 - **CORS**: External images must have appropriate CORS headers. For local development, serve images from the same origin or use a CORS proxy.

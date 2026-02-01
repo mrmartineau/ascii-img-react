@@ -263,16 +263,24 @@ export function AsciiImage({
     ? asciiData.chars.map(row => row.join('')).join('\n')
     : 'Loading...';
 
+  const cssVars = {
+    '--ascii-font-size': `${fontSize}px`,
+    '--ascii-line-height': lineHeight,
+    '--ascii-color': color ?? 'inherit',
+    '--ascii-background': backgroundColor ?? 'transparent',
+  } as React.CSSProperties;
+
   const containerStyles: React.CSSProperties = {
-    fontFamily: 'monospace',
-    fontSize: `${fontSize}px`,
-    lineHeight: lineHeight,
+    fontFamily: 'var(--ascii-font-family, "monospace")',
+    fontSize: 'var(--ascii-font-size)',
+    lineHeight: 'var(--ascii-line-height)',
     whiteSpace: 'pre',
     letterSpacing: '0',
     cursor: enableRipple ? 'pointer' : undefined,
-    color: color,
-    backgroundColor: backgroundColor,
+    color: 'var(--ascii-color)',
+    backgroundColor: 'var(--ascii-background)',
     overflow: 'hidden',
+    ...cssVars,
     ...style,
   };
 

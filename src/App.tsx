@@ -1,7 +1,35 @@
 import { useState, useEffect, useRef } from 'react'
-import { Pane } from 'tweakpane'
+import { Pane, FolderApi } from 'tweakpane'
 import { AsciiImage } from './components/AsciiImage'
 import './App.css'
+
+type PaneParams = {
+  width: number
+  height: number
+  lockAspectRatio: boolean
+  cellWidth: number
+  cellHeight: number
+  contrast: number
+  directionalContrast: number
+  enableDirectionalContrast: boolean
+  fontSize: number
+  lineHeight: number
+  color: string
+  backgroundColor: string
+  canvasWidth: number
+  canvasHeight: number
+  enableRipple: boolean
+  rippleCount: number
+  rippleSpeed: number
+  rippleAmplitude: number
+  rippleDecay: number
+  rippleWavelength: number
+  rippleDuration: number
+}
+
+type SettersMap = {
+  [K in keyof PaneParams]: React.Dispatch<React.SetStateAction<PaneParams[K]>>
+}
 
 function highlightCode(code: string): React.ReactNode[] {
   const patterns: [RegExp, string][] = [
@@ -16,7 +44,6 @@ function highlightCode(code: string): React.ReactNode[] {
 
   type Token = { text: string; className?: string; index: number }
   const tokens: Token[] = []
-  const remaining = code
 
   // Find all matches and their positions
   const allMatches: { match: string; className: string; start: number; end: number }[] = []
@@ -71,6 +98,7 @@ function highlightCode(code: string): React.ReactNode[] {
 
 const SAMPLE_IMAGES = [
   '/z.png',
+  '/react-logo.png',
   '/deep-pMfqcyzTB9c-unsplash.jpg',
   '/alexander-krivitskiy-o7wiNx9x9OQ-unsplash.jpg',
   '/vite.svg',
@@ -81,9 +109,11 @@ function App() {
 
   // Grid settings
   const [width, setWidth] = useState(80)
-  const [height, setHeight] = useState(30)
+  const [height, setHeight] = useState(80)
   const [cellWidth, setCellWidth] = useState(6)
   const [cellHeight, setCellHeight] = useState(12)
+  const [aspectRatio, setAspectRatio] = useState(1)
+  const [lockAspectRatio, setLockAspectRatio] = useState(true)
 
   // Contrast settings
   const [contrast, setContrast] = useState(1.5)
@@ -93,8 +123,8 @@ function App() {
   // Style settings
   const [fontSize, setFontSize] = useState(15)
   const [lineHeight, setLineHeight] = useState(1.5)
-  const [color, setColor] = useState({ r: 0, g: 168, b: 158 })
-  const [backgroundColor, setBackgroundColor] = useState({ r: 0, g: 0, b: 0 })
+  const [color, setColor] = useState('#00a89e')
+  const [backgroundColor, setBackgroundColor] = useState('#000000')
   const [canvasWidth, setCanvasWidth] = useState(800)
   const [canvasHeight, setCanvasHeight] = useState(800)
 
@@ -109,16 +139,78 @@ function App() {
 
   const paneContainerRef = useRef<HTMLDivElement>(null)
   const paneRef = useRef<Pane | null>(null)
+  const paramsRef = useRef<PaneParams | null>(null)
 
-  const colorToHex = (c: { r: number; g: number; b: number }) =>
-    `#${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`
+  const aspectRatioRef = useRef(aspectRatio)
+  const lockAspectRatioRef = useRef(lockAspectRatio)
 
+  // Load image and calculate aspect ratio
+  useEffect(() => {
+    const img = new Image()
+    img.onload = () => {
+      // Account for cell aspect ratio (cells are taller than wide)
+      const cellAspect = cellWidth / cellHeight
+      const imageAspect = img.width / img.height
+      const adjustedAspect = imageAspect / cellAspect
+      setAspectRatio(adjustedAspect)
+
+      // Set initial dimensions based on image aspect ratio
+      const baseWidth = 80
+      const newHeight = Math.max(10, Math.min(100, Math.round(baseWidth / adjustedAspect)))
+      setWidth(baseWidth)
+      setHeight(newHeight)
+
+      // Update canvas dimensions to match
+      const charWidth = fontSize * 0.6
+      const charHeight = fontSize * lineHeight
+      setCanvasWidth(Math.round(baseWidth * charWidth))
+      setCanvasHeight(Math.round(newHeight * charHeight))
+    }
+    img.src = imageUrl
+  }, [imageUrl, cellWidth, cellHeight, fontSize, lineHeight])
+
+  // Keep refs in sync
+  useEffect(() => {
+    aspectRatioRef.current = aspectRatio
+  }, [aspectRatio])
+
+  useEffect(() => {
+    lockAspectRatioRef.current = lockAspectRatio
+  }, [lockAspectRatio])
+
+
+  // Initialize Tweakpane once
   useEffect(() => {
     if (!paneContainerRef.current) return
 
-    const params = {
+    const setters: SettersMap = {
+      width: setWidth,
+      height: setHeight,
+      lockAspectRatio: setLockAspectRatio,
+      cellWidth: setCellWidth,
+      cellHeight: setCellHeight,
+      contrast: setContrast,
+      directionalContrast: setDirectionalContrast,
+      enableDirectionalContrast: setEnableDirectionalContrast,
+      fontSize: setFontSize,
+      lineHeight: setLineHeight,
+      color: setColor,
+      backgroundColor: setBackgroundColor,
+      canvasWidth: setCanvasWidth,
+      canvasHeight: setCanvasHeight,
+      enableRipple: setEnableRipple,
+      rippleCount: setRippleCount,
+      rippleSpeed: setRippleSpeed,
+      rippleAmplitude: setRippleAmplitude,
+      rippleDecay: setRippleDecay,
+      rippleWavelength: setRippleWavelength,
+      rippleDuration: setRippleDuration,
+    }
+
+    const params: PaneParams = {
       width,
       height,
+      lockAspectRatio,
       cellWidth,
       cellHeight,
       contrast,
@@ -138,65 +230,97 @@ function App() {
       rippleWavelength,
       rippleDuration,
     }
+    paramsRef.current = params
 
-    const pane = new Pane({ container: paneContainerRef.current, title: 'Settings', expanded: false })
-    paneRef.current = pane
+    const pane = new Pane({ container: paneContainerRef.current, title: 'Demo Settings', expanded: false }) as FolderApi
+    paneRef.current = pane as unknown as Pane
+
+    // Helper to create a binding with automatic state sync
+    const addBinding = <K extends keyof PaneParams>(
+      folder: FolderApi,
+      key: K,
+      options?: { min?: number; max?: number; step?: number; color?: { type: 'int' } },
+      onChange?: (value: PaneParams[K]) => void
+    ) => {
+      folder.addBinding(params, key, options).on('change', (ev: { value: PaneParams[K] }) => {
+        setters[key](ev.value)
+        onChange?.(ev.value)
+      })
+    }
+
+    // Helper to update canvas dimensions based on grid size
+    const updateCanvasDimensions = (w: number, h: number) => {
+      const charWidth = params.fontSize * 0.6
+      const charHeight = params.fontSize * params.lineHeight
+      const newCanvasWidth = Math.round(w * charWidth)
+      const newCanvasHeight = Math.round(h * charHeight)
+      params.canvasWidth = newCanvasWidth
+      params.canvasHeight = newCanvasHeight
+      setCanvasWidth(newCanvasWidth)
+      setCanvasHeight(newCanvasHeight)
+    }
 
     // Grid folder
     const gridFolder = pane.addFolder({ title: 'Grid' })
-    gridFolder.addBinding(params, 'width', { min: 20, max: 200, step: 1 })
-      .on('change', (ev) => setWidth(ev.value))
-    gridFolder.addBinding(params, 'height', { min: 10, max: 100, step: 1 })
-      .on('change', (ev) => setHeight(ev.value))
-    gridFolder.addBinding(params, 'cellWidth', { min: 2, max: 20, step: 1 })
-      .on('change', (ev) => setCellWidth(ev.value))
-    gridFolder.addBinding(params, 'cellHeight', { min: 4, max: 40, step: 1 })
-      .on('change', (ev) => setCellHeight(ev.value))
+    const widthBinding = gridFolder.addBinding(params, 'width', { min: 20, max: 200, step: 1 })
+    const heightBinding = gridFolder.addBinding(params, 'height', { min: 10, max: 100, step: 1 })
+    addBinding(gridFolder, 'lockAspectRatio')
+    addBinding(gridFolder, 'cellWidth', { min: 2, max: 20, step: 1 })
+    addBinding(gridFolder, 'cellHeight', { min: 4, max: 40, step: 1 })
+
+    widthBinding.on('change', (ev: { value: number }) => {
+      setWidth(ev.value)
+      if (lockAspectRatioRef.current) {
+        const newHeight = Math.max(10, Math.min(100, Math.round(ev.value / aspectRatioRef.current)))
+        params.height = newHeight
+        setHeight(newHeight)
+        heightBinding.refresh()
+        updateCanvasDimensions(ev.value, newHeight)
+      } else {
+        updateCanvasDimensions(ev.value, params.height)
+      }
+    })
+
+    heightBinding.on('change', (ev: { value: number }) => {
+      setHeight(ev.value)
+      if (lockAspectRatioRef.current) {
+        const newWidth = Math.max(20, Math.min(200, Math.round(ev.value * aspectRatioRef.current)))
+        params.width = newWidth
+        setWidth(newWidth)
+        widthBinding.refresh()
+        updateCanvasDimensions(newWidth, ev.value)
+      } else {
+        updateCanvasDimensions(params.width, ev.value)
+      }
+    })
 
     // Contrast folder
     const contrastFolder = pane.addFolder({ title: 'Contrast' })
-    contrastFolder.addBinding(params, 'contrast', { min: 1, max: 5, step: 0.1 })
-      .on('change', (ev) => setContrast(ev.value))
-    contrastFolder.addBinding(params, 'enableDirectionalContrast')
-      .on('change', (ev) => setEnableDirectionalContrast(ev.value))
-    contrastFolder.addBinding(params, 'directionalContrast', { min: 1, max: 5, step: 0.1 })
-      .on('change', (ev) => setDirectionalContrast(ev.value))
+    addBinding(contrastFolder, 'contrast', { min: 1, max: 5, step: 0.1 })
+    addBinding(contrastFolder, 'enableDirectionalContrast')
+    addBinding(contrastFolder, 'directionalContrast', { min: 1, max: 5, step: 0.1 })
 
     // Style folder
     const styleFolder = pane.addFolder({ title: 'Style' })
-    styleFolder.addBinding(params, 'fontSize', { min: 4, max: 30, step: 1 })
-      .on('change', (ev) => setFontSize(ev.value))
-    styleFolder.addBinding(params, 'lineHeight', { min: 0.5, max: 2, step: 0.1 })
-      .on('change', (ev) => setLineHeight(ev.value))
-    styleFolder.addBinding(params, 'color', { color: { type: 'int' } })
-      .on('change', (ev) => setColor(ev.value))
-    styleFolder.addBinding(params, 'backgroundColor', { color: { type: 'int' } })
-      .on('change', (ev) => setBackgroundColor(ev.value))
-    styleFolder.addBinding(params, 'canvasWidth', { min: 200, max: 1200, step: 10 })
-      .on('change', (ev) => setCanvasWidth(ev.value))
-    styleFolder.addBinding(params, 'canvasHeight', { min: 100, max: 800, step: 10 })
-      .on('change', (ev) => setCanvasHeight(ev.value))
+    addBinding(styleFolder, 'fontSize', { min: 4, max: 30, step: 1 })
+    addBinding(styleFolder, 'lineHeight', { min: 0.5, max: 2, step: 0.1 })
+    addBinding(styleFolder, 'color')
+    addBinding(styleFolder, 'backgroundColor')
+    addBinding(styleFolder, 'canvasWidth', { min: 200, max: 1200, step: 10 })
+    addBinding(styleFolder, 'canvasHeight', { min: 100, max: 800, step: 10 })
 
     // Ripple folder
     const rippleFolder = pane.addFolder({ title: 'Ripple' })
-    rippleFolder.addBinding(params, 'enableRipple')
-      .on('change', (ev) => setEnableRipple(ev.value))
-    rippleFolder.addBinding(params, 'rippleCount', { min: 1, max: 5, step: 1 })
-      .on('change', (ev) => setRippleCount(ev.value))
-    rippleFolder.addBinding(params, 'rippleSpeed', { min: 50, max: 500, step: 10 })
-      .on('change', (ev) => setRippleSpeed(ev.value))
-    rippleFolder.addBinding(params, 'rippleAmplitude', { min: 0.1, max: 1, step: 0.05 })
-      .on('change', (ev) => setRippleAmplitude(ev.value))
-    rippleFolder.addBinding(params, 'rippleDecay', { min: 0.5, max: 5, step: 0.5 })
-      .on('change', (ev) => setRippleDecay(ev.value))
-    rippleFolder.addBinding(params, 'rippleWavelength', { min: 10, max: 100, step: 5 })
-      .on('change', (ev) => setRippleWavelength(ev.value))
-    rippleFolder.addBinding(params, 'rippleDuration', { min: 500, max: 5000, step: 100 })
-      .on('change', (ev) => setRippleDuration(ev.value))
+    addBinding(rippleFolder, 'enableRipple')
+    addBinding(rippleFolder, 'rippleCount', { min: 1, max: 5, step: 1 })
+    addBinding(rippleFolder, 'rippleSpeed', { min: 50, max: 500, step: 10 })
+    addBinding(rippleFolder, 'rippleAmplitude', { min: 0.1, max: 1, step: 0.05 })
+    addBinding(rippleFolder, 'rippleDecay', { min: 0.5, max: 5, step: 0.5 })
+    addBinding(rippleFolder, 'rippleWavelength', { min: 10, max: 100, step: 5 })
+    addBinding(rippleFolder, 'rippleDuration', { min: 500, max: 5000, step: 100 })
 
-    return () => {
-      pane.dispose()
-    }
+    return () => pane.dispose()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const codeExample = `import { AsciiImage } from 'ascii-img-react';
@@ -214,8 +338,8 @@ function MyComponent() {
       enableDirectionalContrast={${enableDirectionalContrast}}
       fontSize={${fontSize}}
       lineHeight={${lineHeight}}
-      color="${colorToHex(color)}"
-      backgroundColor="${colorToHex(backgroundColor)}"
+      color="${color}"
+      backgroundColor="${backgroundColor}"
       enableRipple={${enableRipple}}
       rippleCount={${rippleCount}}
       rippleConfig={{
@@ -249,8 +373,11 @@ function MyComponent() {
         ))}
       </div>
 
-      <div className="ascii-container">
+      <div className="controls-container">
         <div className="controls" ref={paneContainerRef} />
+      </div>
+
+      <div className="ascii-container">
         <AsciiImage
           src={imageUrl}
           width={width}
@@ -262,8 +389,8 @@ function MyComponent() {
           enableDirectionalContrast={enableDirectionalContrast}
           fontSize={fontSize}
           lineHeight={lineHeight}
-          color={colorToHex(color)}
-          backgroundColor={colorToHex(backgroundColor)}
+          color={color}
+          backgroundColor={backgroundColor}
           enableRipple={enableRipple}
           rippleCount={rippleCount}
           rippleConfig={{
