@@ -389,6 +389,7 @@ function MyComponent() {
       <div className="content">
         <h1>ascii-img-react</h1>
         <p>by <a href="https://zander.wtf">Zander Martineau</a></p>
+        <p><a href="https://github.com/mrmartineau/ascii-img-react">GitHub Repo</a></p>
         <pre>$ npm install ascii-img-react</pre>
         <p>Convert images to ASCII art with ripple animation effects. Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
       </div>
