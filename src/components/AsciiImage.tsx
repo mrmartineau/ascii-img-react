@@ -73,7 +73,7 @@ export function AsciiImage({
   backgroundColor,
 }: AsciiImageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [asciiData, setAsciiData] = useState<AsciiData | null>(null);
+  const [animatedAsciiData, setAnimatedAsciiData] = useState<AsciiData | null>(null);
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const [imageData, setImageData] = useState<ImageData | null>(null);
   const animationRef = useRef<number | null>(null);
@@ -185,13 +185,15 @@ export function AsciiImage({
     return { chars, cols, rows };
   }, [gridConfig, contrast, directionalContrast, enableDirectionalContrast]);
 
-  // Initial render when image data is ready
-  useEffect(() => {
-    if (!imageData) return;
-
-    const data = renderAscii(imageData, [], performance.now());
-    setAsciiData(data);
+  // Compute static ASCII data from image (no ripples)
+  const staticAsciiData = useMemo(() => {
+    if (!imageData) return null;
+    // Time param unused when ripples array is empty
+    return renderAscii(imageData, [], 0);
   }, [imageData, renderAscii]);
+
+  // Use animated data during ripples, otherwise use static data
+  const asciiData = ripples.length > 0 ? animatedAsciiData : staticAsciiData;
 
   // Animation loop for ripples
   useEffect(() => {
@@ -209,12 +211,11 @@ export function AsciiImage({
 
       if (hasActiveRipples(activeRipples, now)) {
         const data = renderAscii(imageData, activeRipples, now);
-        setAsciiData(data);
+        setAnimatedAsciiData(data);
         animationRef.current = requestAnimationFrame(animate);
       } else {
-        // Final render without ripples
-        const data = renderAscii(imageData, [], now);
-        setAsciiData(data);
+        // Clear animated data, will fall back to static
+        setAnimatedAsciiData(null);
       }
     };
 
@@ -264,6 +265,7 @@ export function AsciiImage({
     : 'Loading...';
 
   const cssVars = {
+    // '--ascii-font-family': 'monospace',
     '--ascii-font-size': `${fontSize}px`,
     '--ascii-line-height': lineHeight,
     '--ascii-color': color ?? 'inherit',
@@ -271,7 +273,7 @@ export function AsciiImage({
   } as React.CSSProperties;
 
   const containerStyles: React.CSSProperties = {
-    fontFamily: 'var(--ascii-font-family, "monospace")',
+    fontFamily: 'var(--ascii-font-family, monospace)',
     fontSize: 'var(--ascii-font-size)',
     lineHeight: 'var(--ascii-line-height)',
     whiteSpace: 'pre',
