@@ -25,6 +25,9 @@ type PaneParams = {
   rippleDecay: number
   rippleWavelength: number
   rippleDuration: number
+  enableRain: boolean
+  rainIntensity: number
+  rainVariation: number
 }
 
 type SettersMap = {
@@ -137,6 +140,11 @@ function App() {
   const [rippleWavelength, setRippleWavelength] = useState(40)
   const [rippleDuration, setRippleDuration] = useState(2000)
 
+  // Rain settings
+  const [enableRain, setEnableRain] = useState(false)
+  const [rainIntensity, setRainIntensity] = useState(3)
+  const [rainVariation, setRainVariation] = useState(0.3)
+
   const paneContainerRef = useRef<HTMLDivElement>(null)
   const paneRef = useRef<Pane | null>(null)
   const paramsRef = useRef<PaneParams | null>(null)
@@ -205,6 +213,9 @@ function App() {
       rippleDecay: setRippleDecay,
       rippleWavelength: setRippleWavelength,
       rippleDuration: setRippleDuration,
+      enableRain: setEnableRain,
+      rainIntensity: setRainIntensity,
+      rainVariation: setRainVariation,
     }
 
     const params: PaneParams = {
@@ -229,6 +240,9 @@ function App() {
       rippleDecay,
       rippleWavelength,
       rippleDuration,
+      enableRain,
+      rainIntensity,
+      rainVariation,
     }
     paramsRef.current = params
 
@@ -319,6 +333,12 @@ function App() {
     addBinding(rippleFolder, 'rippleWavelength', { min: 10, max: 100, step: 5 })
     addBinding(rippleFolder, 'rippleDuration', { min: 500, max: 5000, step: 100 })
 
+    // Rain folder
+    const rainFolder = pane.addFolder({ title: 'Rain' })
+    addBinding(rainFolder, 'enableRain')
+    addBinding(rainFolder, 'rainIntensity', { min: 1, max: 10, step: 0.5 })
+    addBinding(rainFolder, 'rainVariation', { min: 0, max: 1, step: 0.05 })
+
     return () => pane.dispose()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -348,6 +368,11 @@ function MyComponent() {
         decay: ${rippleDecay},
         wavelength: ${rippleWavelength},
         duration: ${rippleDuration},
+      }}
+      enableRain={${enableRain}}
+      rainConfig={{
+        intensity: ${rainIntensity},
+        variation: ${rainVariation},
       }}
       style={{
         width: ${canvasWidth},
@@ -400,6 +425,11 @@ function MyComponent() {
             wavelength: rippleWavelength,
             duration: rippleDuration,
           }}
+          enableRain={enableRain}
+          rainConfig={{
+            intensity: rainIntensity,
+            variation: rainVariation,
+          }}
           style={{
             width: canvasWidth,
             height: canvasHeight,
@@ -408,7 +438,7 @@ function MyComponent() {
           }}
         />
       </div>
-      <p>Click on the image to trigger ripple animation</p>
+      <p>Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
 
       <div className="code-section">
         <h2>Code</h2>

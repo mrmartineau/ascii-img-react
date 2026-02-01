@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { sampleCell, sampleExternalCircles, type GridConfig, DEFAULT_GRID_CONFIG } from '../lib/sampling';
 import { cachedLookup } from '../lib/lookup';
 import { applyFullContrast } from '../lib/contrast';
-import { createRipple, applyRippleToVector, pruneExpiredRipples, hasActiveRipples, type Ripple, type RippleConfig } from '../lib/ripple';
+import { createRipple, createRainDrop, applyRippleToVector, pruneExpiredRipples, hasActiveRipples, type Ripple, type RippleConfig, type RainConfig, DEFAULT_RAIN_CONFIG } from '../lib/ripple';
 
 export interface AsciiImageProps {
   /** Image source URL */
@@ -31,6 +31,10 @@ export interface AsciiImageProps {
   rippleConfig?: Partial<RippleConfig>;
   /** Number of ripples to create per click (default: 1) */
   rippleCount?: number;
+  /** Enable rain animation mode (default: false) */
+  enableRain?: boolean;
+  /** Rain animation configuration */
+  rainConfig?: Partial<RainConfig>;
   /** CSS class name for the container */
   className?: string;
   /** Custom styles for the container */
@@ -66,6 +70,8 @@ export function AsciiImage({
   enableRipple = true,
   rippleConfig,
   rippleCount = 1,
+  enableRain = false,
+  rainConfig,
   className,
   style,
   onClick,
@@ -227,6 +233,35 @@ export function AsciiImage({
       }
     };
   }, [imageData, ripples, renderAscii]);
+
+  // Rain animation - spawn ripples at random intervals
+  useEffect(() => {
+    if (!enableRain || !imageData) {
+      return;
+    }
+
+    const config: RainConfig = { ...DEFAULT_RAIN_CONFIG, ...rainConfig };
+    const intervalMs = 1000 / config.intensity;
+
+    const spawnDrop = () => {
+      const drop = createRainDrop(
+        imageData.width,
+        imageData.height,
+        rainConfig,
+        rippleConfig
+      );
+      setRipples(prev => [...prev, drop]);
+    };
+
+    // Spawn first drop immediately
+    spawnDrop();
+
+    const interval = setInterval(spawnDrop, intervalMs);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [enableRain, imageData, rainConfig, rippleConfig]);
 
   // Handle click for ripple effect
   const handleClick = useCallback((event: React.MouseEvent) => {
