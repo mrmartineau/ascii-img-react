@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Pane, FolderApi } from 'tweakpane'
 import { AsciiImage } from './components/AsciiImage'
+import { AsciiVideo } from './components/AsciiVideo'
 import './App.css'
 
 type PaneParams = {
@@ -109,8 +110,16 @@ const SAMPLE_IMAGES = [
   '/vite.svg',
 ]
 
+type DemoMode = 'image' | 'video'
+
 function App() {
+  const [mode, setMode] = useState<DemoMode>('image')
   const [imageUrl, setImageUrl] = useState(SAMPLE_IMAGES[0])
+  const [videoUrl, setVideoUrl] = useState('')
+  const [videoFps, setVideoFps] = useState(15)
+  const [videoAutoPlay, setVideoAutoPlay] = useState(true)
+  const [videoLoop, setVideoLoop] = useState(true)
+  const [videoMuted, setVideoMuted] = useState(true)
 
   // Grid settings
   const [width, setWidth] = useState(80)
@@ -156,6 +165,7 @@ function App() {
 
   // Load image and calculate aspect ratio
   useEffect(() => {
+    if (mode !== 'image') return
     const img = new Image()
     img.onload = () => {
       // Account for cell aspect ratio (cells are taller than wide)
@@ -177,7 +187,7 @@ function App() {
       setCanvasHeight(Math.round(newHeight * charHeight))
     }
     img.src = imageUrl
-  }, [imageUrl, cellWidth, cellHeight, fontSize, lineHeight])
+  }, [imageUrl, cellWidth, cellHeight, fontSize, lineHeight, mode])
 
   // Keep refs in sync
   useEffect(() => {
@@ -345,7 +355,8 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const codeExample = `import { AsciiImage } from 'ascii-img-react';
+  const codeExample = mode === 'image'
+    ? `import { AsciiImage } from 'ascii-img-react';
 
 function MyComponent() {
   return (
@@ -353,6 +364,48 @@ function MyComponent() {
       src="${imageUrl}"
       width={${width}}
       height={${height}}
+      cellWidth={${cellWidth}}
+      cellHeight={${cellHeight}}
+      contrast={${contrast}}
+      directionalContrast={${directionalContrast}}
+      enableDirectionalContrast={${enableDirectionalContrast}}
+      fontSize={${fontSize}}
+      lineHeight={${lineHeight}}
+      color="${color}"
+      backgroundColor="${backgroundColor}"
+      enableRipple={${enableRipple}}
+      rippleCount={${rippleCount}}
+      rippleConfig={{
+        speed: ${rippleSpeed},
+        amplitude: ${rippleAmplitude},
+        decay: ${rippleDecay},
+        wavelength: ${rippleWavelength},
+        duration: ${rippleDuration},
+      }}
+      enableRain={${enableRain}}
+      rainConfig={{
+        intensity: ${rainIntensity},
+        variation: ${rainVariation},
+      }}
+      style={{
+        width: ${canvasWidth},
+        height: ${canvasHeight},
+      }}
+    />
+  );
+}`
+    : `import { AsciiVideo } from 'ascii-img-react';
+
+function MyComponent() {
+  return (
+    <AsciiVideo
+      src="${videoUrl}"
+      width={${width}}
+      height={${height}}
+      fps={${videoFps}}
+      autoPlay={${videoAutoPlay}}
+      loop={${videoLoop}}
+      muted={${videoMuted}}
       cellWidth={${cellWidth}}
       cellHeight={${cellHeight}}
       contrast={${contrast}}
@@ -391,62 +444,182 @@ function MyComponent() {
         <p>by <a href="https://zander.wtf">Zander Martineau</a></p>
         <p><a href="https://github.com/mrmartineau/ascii-img-react">GitHub Repo</a></p>
         <pre>$ npm install ascii-img-react</pre>
-        <p>Convert images to ASCII art with ripple animation effects. Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
+        <p>Convert images and videos to ASCII art with ripple animation effects. Click on the output to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
       </div>
-      <div className="image-thumbnails">
-        {SAMPLE_IMAGES.map((src) => (
-          <button
-          key={src}
-          className={`thumbnail ${imageUrl === src ? 'active' : ''}`}
-          onClick={() => setImageUrl(src)}
-          >
-            <img src={src} alt="" />
-          </button>
-        ))}
+
+      <div className="mode-toggle">
+        <button
+          className={`mode-button ${mode === 'image' ? 'active' : ''}`}
+          onClick={() => setMode('image')}
+        >
+          Image
+        </button>
+        <button
+          className={`mode-button ${mode === 'video' ? 'active' : ''}`}
+          onClick={() => setMode('video')}
+        >
+          Video
+        </button>
       </div>
-      <p>Choose an image from the list above:</p>
+
+      {mode === 'image' && (
+        <>
+          <div className="image-thumbnails">
+            {SAMPLE_IMAGES.map((src) => (
+              <button
+                key={src}
+                className={`thumbnail ${imageUrl === src ? 'active' : ''}`}
+                onClick={() => setImageUrl(src)}
+              >
+                <img src={src} alt="" />
+              </button>
+            ))}
+          </div>
+          <p>Choose an image from the list above:</p>
+        </>
+      )}
+
+      {mode === 'video' && (
+        <div className="video-input-section">
+          <label className="video-url-label" htmlFor="video-url">
+            Video URL (mp4, webm):
+          </label>
+          <div className="video-url-row">
+            <input
+              id="video-url"
+              type="text"
+              className="video-url-input"
+              placeholder="https://example.com/video.mp4"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+            />
+          </div>
+          <div className="video-controls-row">
+            <label>
+              FPS:
+              <input
+                type="number"
+                min={1}
+                max={60}
+                value={videoFps}
+                onChange={(e) => setVideoFps(Number(e.target.value))}
+                className="video-number-input"
+              />
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={videoAutoPlay}
+                onChange={(e) => setVideoAutoPlay(e.target.checked)}
+              />
+              Autoplay
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={videoLoop}
+                onChange={(e) => setVideoLoop(e.target.checked)}
+              />
+              Loop
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={videoMuted}
+                onChange={(e) => setVideoMuted(e.target.checked)}
+              />
+              Muted
+            </label>
+          </div>
+        </div>
+      )}
 
       <div className="controls-container">
         <div className="controls" ref={paneContainerRef} />
       </div>
 
       <div className="ascii-container">
-        <AsciiImage
-          src={imageUrl}
-          width={width}
-          height={height}
-          cellWidth={cellWidth}
-          cellHeight={cellHeight}
-          contrast={contrast}
-          directionalContrast={directionalContrast}
-          enableDirectionalContrast={enableDirectionalContrast}
-          fontSize={fontSize}
-          lineHeight={lineHeight}
-          color={color}
-          backgroundColor={backgroundColor}
-          enableRipple={enableRipple}
-          rippleCount={rippleCount}
-          rippleConfig={{
-            speed: rippleSpeed,
-            amplitude: rippleAmplitude,
-            decay: rippleDecay,
-            wavelength: rippleWavelength,
-            duration: rippleDuration,
-          }}
-          enableRain={enableRain}
-          rainConfig={{
-            intensity: rainIntensity,
-            variation: rainVariation,
-          }}
-          style={{
-            width: canvasWidth,
-            height: canvasHeight,
-            padding: '15px',
-            borderRadius: '15px',
-          }}
-        />
+        {mode === 'image' ? (
+          <AsciiImage
+            src={imageUrl}
+            width={width}
+            height={height}
+            cellWidth={cellWidth}
+            cellHeight={cellHeight}
+            contrast={contrast}
+            directionalContrast={directionalContrast}
+            enableDirectionalContrast={enableDirectionalContrast}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            color={color}
+            backgroundColor={backgroundColor}
+            enableRipple={enableRipple}
+            rippleCount={rippleCount}
+            rippleConfig={{
+              speed: rippleSpeed,
+              amplitude: rippleAmplitude,
+              decay: rippleDecay,
+              wavelength: rippleWavelength,
+              duration: rippleDuration,
+            }}
+            enableRain={enableRain}
+            rainConfig={{
+              intensity: rainIntensity,
+              variation: rainVariation,
+            }}
+            style={{
+              width: canvasWidth,
+              height: canvasHeight,
+              padding: '15px',
+              borderRadius: '15px',
+            }}
+          />
+        ) : videoUrl ? (
+          <AsciiVideo
+            src={videoUrl}
+            width={width}
+            height={height}
+            fps={videoFps}
+            autoPlay={videoAutoPlay}
+            loop={videoLoop}
+            muted={videoMuted}
+            cellWidth={cellWidth}
+            cellHeight={cellHeight}
+            contrast={contrast}
+            directionalContrast={directionalContrast}
+            enableDirectionalContrast={enableDirectionalContrast}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            color={color}
+            backgroundColor={backgroundColor}
+            enableRipple={enableRipple}
+            rippleCount={rippleCount}
+            rippleConfig={{
+              speed: rippleSpeed,
+              amplitude: rippleAmplitude,
+              decay: rippleDecay,
+              wavelength: rippleWavelength,
+              duration: rippleDuration,
+            }}
+            enableRain={enableRain}
+            rainConfig={{
+              intensity: rainIntensity,
+              variation: rainVariation,
+            }}
+            style={{
+              width: canvasWidth,
+              height: canvasHeight,
+              padding: '15px',
+              borderRadius: '15px',
+            }}
+          />
+        ) : (
+          <div className="video-placeholder">
+            Enter a video URL above to see it as ASCII art
+          </div>
+        )}
       </div>
-      <p>Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
+      <p>Click on the {mode} to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
 
       <div className="code-section">
         <h2>Code</h2>
