@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Pane, FolderApi } from 'tweakpane'
 import { AsciiImage } from './components/AsciiImage'
+import { AsciiCanvas } from './components/AsciiCanvas'
 import './App.css'
 
 type PaneParams = {
@@ -447,6 +448,44 @@ function MyComponent() {
         />
       </div>
       <p>Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
+
+      <div className="canvas-demo-section">
+        <div className="content">
+          <h2>AsciiCanvas</h2>
+          <p>No image needed — just ripples, rain, and mouse tracking. Move your mouse over the canvas below.</p>
+        </div>
+        <div className="ascii-container">
+          <AsciiCanvas
+            width={80}
+            height={30}
+            fontSize={fontSize}
+            lineHeight={lineHeight}
+            color={color}
+            backgroundColor={backgroundColor}
+            enableRipple
+            rippleConfig={{
+              speed: rippleSpeed,
+              amplitude: rippleAmplitude,
+              decay: rippleDecay,
+              wavelength: rippleWavelength,
+              duration: rippleDuration,
+            }}
+            enableRain={enableRain}
+            rainConfig={{
+              intensity: rainIntensity,
+              variation: rainVariation,
+            }}
+            enableMouseRipple
+            style={{
+              width: canvasWidth,
+              height: Math.round(canvasWidth * 0.4),
+              padding: '15px',
+              borderRadius: '15px',
+            }}
+          />
+        </div>
+        <p>Move your mouse over the canvas, click for bigger ripples, or enable Rain mode</p>
+      </div>
 
       <div className="code-section">
         <h2>Code</h2>

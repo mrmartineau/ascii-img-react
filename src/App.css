@@ -76,6 +76,10 @@ h1 {
   object-fit: cover;
 }
 
+.canvas-demo-section {
+  margin-top: 3rem;
+}
+
 .code-section {
   margin-top: 3rem;
   text-align: left;
