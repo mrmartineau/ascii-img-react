@@ -99,6 +99,7 @@ export function AsciiCanvas({
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const animationRef = useRef<number | null>(null);
   const lastMouseRippleTimeRef = useRef(0);
+  const lastMousePosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Pixel dimensions of the virtual grid
   const gridPixelWidth = width * cellWidth;
@@ -238,26 +239,49 @@ export function AsciiCanvas({
   );
 
   // Mouse move handler for mouse-tracking ripples
+  // Ripple origin is offset in the direction of travel so the wave
+  // emanates from ahead of the cursor (e.g. moving east → ripple starts
+  // to the east of the cursor position).
   const handleMouseMove = useCallback(
     (event: React.MouseEvent) => {
       if (!enableMouseRipple) return;
 
       const now = performance.now();
-      if (now - lastMouseRippleTimeRef.current < mouseThrottleMs) return;
-      lastMouseRippleTimeRef.current = now;
-
       const pos = toGridCoords(event);
       if (!pos) return;
 
+      const prev = lastMousePosRef.current;
+      lastMousePosRef.current = pos;
+
+      if (now - lastMouseRippleTimeRef.current < mouseThrottleMs) return;
+      lastMouseRippleTimeRef.current = now;
+
+      // Calculate ripple origin offset in the direction of mouse travel
+      let originX = pos.x;
+      let originY = pos.y;
+
+      if (prev) {
+        const dx = pos.x - prev.x;
+        const dy = pos.y - prev.y;
+        const mag = Math.sqrt(dx * dx + dy * dy);
+
+        if (mag > 0.5) {
+          // Offset distance scales with cell size for a consistent feel
+          const offset = (cellWidth + cellHeight) * 0.8;
+          originX = pos.x + (dx / mag) * offset;
+          originY = pos.y + (dy / mag) * offset;
+        }
+      }
+
       const mergedConfig = { ...DEFAULT_MOUSE_RIPPLE_CONFIG, ...mouseRippleConfig };
-      const ripple = createRipple(pos.x, pos.y, mergedConfig);
+      const ripple = createRipple(originX, originY, mergedConfig);
 
       setRipples((prev) => {
         if (prev.length >= maxRipples) return prev;
         return [...prev, ripple];
       });
     },
-    [enableMouseRipple, mouseThrottleMs, mouseRippleConfig, maxRipples, toGridCoords],
+    [enableMouseRipple, mouseThrottleMs, mouseRippleConfig, maxRipples, toGridCoords, cellWidth, cellHeight],
   );
 
   const displayString = ripples.length > 0 && asciiString ? asciiString : staticString;
