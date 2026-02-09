@@ -1,9 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { Pane, FolderApi } from 'tweakpane'
 import { AsciiImage } from './components/AsciiImage'
+import { AsciiCanvas } from './components/AsciiCanvas'
+import {
+  addBinding,
+  addStyleFolder,
+  addRippleFolder,
+  addRainFolder,
+  type StyleParams,
+  type RippleParams,
+  type RainParams,
+} from './tweakpane'
 import './App.css'
 
-type PaneParams = {
+// ── AsciiImage-specific params ──────────────────────────────────────────
+
+type ImagePaneParams = StyleParams & RippleParams & RainParams & {
   width: number
   height: number
   lockAspectRatio: boolean
@@ -12,27 +24,27 @@ type PaneParams = {
   contrast: number
   directionalContrast: number
   enableDirectionalContrast: boolean
-  fontSize: number
-  lineHeight: number
-  color: string
-  backgroundColor: string
   canvasWidth: number
   canvasHeight: number
-  enableRipple: boolean
-  rippleCount: number
-  rippleSpeed: number
-  rippleAmplitude: number
-  rippleDecay: number
-  rippleWavelength: number
-  rippleDuration: number
-  enableRain: boolean
-  rainIntensity: number
-  rainVariation: number
 }
 
-type SettersMap = {
-  [K in keyof PaneParams]: React.Dispatch<React.SetStateAction<PaneParams[K]>>
+// ── AsciiCanvas-specific params ─────────────────────────────────────────
+
+type CanvasPaneParams = StyleParams & RippleParams & RainParams & {
+  canvasWidth: number
+  canvasHeight: number
+  gridWidth: number
+  gridHeight: number
+  enableMouseRipple: boolean
+  mouseRippleSpeed: number
+  mouseRippleAmplitude: number
+  mouseRippleDecay: number
+  mouseRippleWavelength: number
+  mouseRippleDuration: number
+  mouseThrottleMs: number
 }
+
+// ── Syntax highlighting ─────────────────────────────────────────────────
 
 function highlightCode(code: string): React.ReactNode[] {
   const patterns: [RegExp, string][] = [
@@ -48,7 +60,6 @@ function highlightCode(code: string): React.ReactNode[] {
   type Token = { text: string; className?: string; index: number }
   const tokens: Token[] = []
 
-  // Find all matches and their positions
   const allMatches: { match: string; className: string; start: number; end: number }[] = []
 
   for (const [pattern, className] of patterns) {
@@ -66,7 +77,6 @@ function highlightCode(code: string): React.ReactNode[] {
     }
   }
 
-  // Sort by position and filter overlaps
   allMatches.sort((a, b) => a.start - b.start)
   const filtered: typeof allMatches = []
   let lastEnd = 0
@@ -77,7 +87,6 @@ function highlightCode(code: string): React.ReactNode[] {
     }
   }
 
-  // Build tokens
   let pos = 0
   for (const m of filtered) {
     if (m.start > pos) {
@@ -99,6 +108,8 @@ function highlightCode(code: string): React.ReactNode[] {
   )
 }
 
+// ── Sample images ───────────────────────────────────────────────────────
+
 const SAMPLE_IMAGES = [
   '/z.png',
   '/react-logo.png',
@@ -109,48 +120,68 @@ const SAMPLE_IMAGES = [
   '/vite.svg',
 ]
 
+// ── App ─────────────────────────────────────────────────────────────────
+
 function App() {
   const [imageUrl, setImageUrl] = useState(SAMPLE_IMAGES[0])
 
-  // Grid settings
+  // ── AsciiImage state ──────────────────────────────────────────────────
   const [width, setWidth] = useState(80)
   const [height, setHeight] = useState(80)
   const [cellWidth, setCellWidth] = useState(6)
   const [cellHeight, setCellHeight] = useState(12)
   const [aspectRatio, setAspectRatio] = useState(1)
   const [lockAspectRatio, setLockAspectRatio] = useState(true)
-
-  // Contrast settings
   const [contrast, setContrast] = useState(1.5)
   const [directionalContrast, setDirectionalContrast] = useState(2)
   const [enableDirectionalContrast, setEnableDirectionalContrast] = useState(true)
+  const [imgFontSize, setImgFontSize] = useState(15)
+  const [imgLineHeight, setImgLineHeight] = useState(1.5)
+  const [imgColor, setImgColor] = useState('#00a89e')
+  const [imgBg, setImgBg] = useState('#000000')
+  const [imgCanvasWidth, setImgCanvasWidth] = useState(800)
+  const [imgCanvasHeight, setImgCanvasHeight] = useState(800)
+  const [imgEnableRipple, setImgEnableRipple] = useState(true)
+  const [imgRippleCount, setImgRippleCount] = useState(1)
+  const [imgRippleSpeed, setImgRippleSpeed] = useState(150)
+  const [imgRippleAmplitude, setImgRippleAmplitude] = useState(0.9)
+  const [imgRippleDecay, setImgRippleDecay] = useState(2)
+  const [imgRippleWavelength, setImgRippleWavelength] = useState(40)
+  const [imgRippleDuration, setImgRippleDuration] = useState(2000)
+  const [imgEnableRain, setImgEnableRain] = useState(false)
+  const [imgRainIntensity, setImgRainIntensity] = useState(3)
+  const [imgRainVariation, setImgRainVariation] = useState(0.3)
 
-  // Style settings
-  const [fontSize, setFontSize] = useState(15)
-  const [lineHeight, setLineHeight] = useState(1.5)
-  const [color, setColor] = useState('#00a89e')
-  const [backgroundColor, setBackgroundColor] = useState('#000000')
-  const [canvasWidth, setCanvasWidth] = useState(800)
-  const [canvasHeight, setCanvasHeight] = useState(800)
+  // ── AsciiCanvas state ─────────────────────────────────────────────────
+  const [cvGridWidth, setCvGridWidth] = useState(80)
+  const [cvGridHeight, setCvGridHeight] = useState(30)
+  const [cvCanvasWidth, setCvCanvasWidth] = useState(800)
+  const [cvCanvasHeight, setCvCanvasHeight] = useState(320)
+  const [cvFontSize, setCvFontSize] = useState(15)
+  const [cvLineHeight, setCvLineHeight] = useState(1.5)
+  const [cvColor, setCvColor] = useState('#00a89e')
+  const [cvBg, setCvBg] = useState('#000000')
+  const [cvEnableRipple, setCvEnableRipple] = useState(true)
+  const [cvRippleCount, setCvRippleCount] = useState(1)
+  const [cvRippleSpeed, setCvRippleSpeed] = useState(150)
+  const [cvRippleAmplitude, setCvRippleAmplitude] = useState(0.9)
+  const [cvRippleDecay, setCvRippleDecay] = useState(2)
+  const [cvRippleWavelength, setCvRippleWavelength] = useState(40)
+  const [cvRippleDuration, setCvRippleDuration] = useState(2000)
+  const [cvEnableRain, setCvEnableRain] = useState(false)
+  const [cvRainIntensity, setCvRainIntensity] = useState(3)
+  const [cvRainVariation, setCvRainVariation] = useState(0.3)
+  const [cvEnableMouseRipple, setCvEnableMouseRipple] = useState(true)
+  const [cvMouseSpeed, setCvMouseSpeed] = useState(120)
+  const [cvMouseAmplitude, setCvMouseAmplitude] = useState(0.25)
+  const [cvMouseDecay, setCvMouseDecay] = useState(3)
+  const [cvMouseWavelength, setCvMouseWavelength] = useState(25)
+  const [cvMouseDuration, setCvMouseDuration] = useState(1000)
+  const [cvMouseThrottle, setCvMouseThrottle] = useState(60)
 
-  // Ripple settings
-  const [enableRipple, setEnableRipple] = useState(true)
-  const [rippleCount, setRippleCount] = useState(1)
-  const [rippleSpeed, setRippleSpeed] = useState(150)
-  const [rippleAmplitude, setRippleAmplitude] = useState(0.9)
-  const [rippleDecay, setRippleDecay] = useState(2)
-  const [rippleWavelength, setRippleWavelength] = useState(40)
-  const [rippleDuration, setRippleDuration] = useState(2000)
-
-  // Rain settings
-  const [enableRain, setEnableRain] = useState(false)
-  const [rainIntensity, setRainIntensity] = useState(3)
-  const [rainVariation, setRainVariation] = useState(0.3)
-
-  const paneContainerRef = useRef<HTMLDivElement>(null)
-  const paneRef = useRef<Pane | null>(null)
-  const paramsRef = useRef<PaneParams | null>(null)
-
+  // ── Refs ───────────────────────────────────────────────────────────────
+  const imgPaneContainerRef = useRef<HTMLDivElement>(null)
+  const cvPaneContainerRef = useRef<HTMLDivElement>(null)
   const aspectRatioRef = useRef(aspectRatio)
   const lockAspectRatioRef = useRef(lockAspectRatio)
 
@@ -158,131 +189,70 @@ function App() {
   useEffect(() => {
     const img = new Image()
     img.onload = () => {
-      // Account for cell aspect ratio (cells are taller than wide)
       const cellAspect = cellWidth / cellHeight
       const imageAspect = img.width / img.height
       const adjustedAspect = imageAspect / cellAspect
       setAspectRatio(adjustedAspect)
 
-      // Set initial dimensions based on image aspect ratio
       const baseWidth = 80
       const newHeight = Math.max(10, Math.min(100, Math.round(baseWidth / adjustedAspect)))
       setWidth(baseWidth)
       setHeight(newHeight)
 
-      // Update canvas dimensions to match
-      const charWidth = fontSize * 0.6
-      const charHeight = fontSize * lineHeight
-      setCanvasWidth(Math.round(baseWidth * charWidth))
-      setCanvasHeight(Math.round(newHeight * charHeight))
+      const charWidth = imgFontSize * 0.6
+      const charHeight = imgFontSize * imgLineHeight
+      setImgCanvasWidth(Math.round(baseWidth * charWidth))
+      setImgCanvasHeight(Math.round(newHeight * charHeight))
     }
     img.src = imageUrl
-  }, [imageUrl, cellWidth, cellHeight, fontSize, lineHeight])
+  }, [imageUrl, cellWidth, cellHeight, imgFontSize, imgLineHeight])
 
-  // Keep refs in sync
+  useEffect(() => { aspectRatioRef.current = aspectRatio }, [aspectRatio])
+  useEffect(() => { lockAspectRatioRef.current = lockAspectRatio }, [lockAspectRatio])
+
+  // ── AsciiImage Tweakpane ──────────────────────────────────────────────
   useEffect(() => {
-    aspectRatioRef.current = aspectRatio
-  }, [aspectRatio])
+    if (!imgPaneContainerRef.current) return
 
-  useEffect(() => {
-    lockAspectRatioRef.current = lockAspectRatio
-  }, [lockAspectRatio])
-
-
-  // Initialize Tweakpane once
-  useEffect(() => {
-    if (!paneContainerRef.current) return
-
-    const setters: SettersMap = {
-      width: setWidth,
-      height: setHeight,
-      lockAspectRatio: setLockAspectRatio,
-      cellWidth: setCellWidth,
-      cellHeight: setCellHeight,
-      contrast: setContrast,
-      directionalContrast: setDirectionalContrast,
-      enableDirectionalContrast: setEnableDirectionalContrast,
-      fontSize: setFontSize,
-      lineHeight: setLineHeight,
-      color: setColor,
-      backgroundColor: setBackgroundColor,
-      canvasWidth: setCanvasWidth,
-      canvasHeight: setCanvasHeight,
-      enableRipple: setEnableRipple,
-      rippleCount: setRippleCount,
-      rippleSpeed: setRippleSpeed,
-      rippleAmplitude: setRippleAmplitude,
-      rippleDecay: setRippleDecay,
-      rippleWavelength: setRippleWavelength,
-      rippleDuration: setRippleDuration,
-      enableRain: setEnableRain,
-      rainIntensity: setRainIntensity,
-      rainVariation: setRainVariation,
+    const params: ImagePaneParams = {
+      width, height, lockAspectRatio, cellWidth, cellHeight,
+      contrast, directionalContrast, enableDirectionalContrast,
+      fontSize: imgFontSize, lineHeight: imgLineHeight,
+      color: imgColor, backgroundColor: imgBg,
+      canvasWidth: imgCanvasWidth, canvasHeight: imgCanvasHeight,
+      enableRipple: imgEnableRipple, rippleCount: imgRippleCount,
+      rippleSpeed: imgRippleSpeed, rippleAmplitude: imgRippleAmplitude,
+      rippleDecay: imgRippleDecay, rippleWavelength: imgRippleWavelength,
+      rippleDuration: imgRippleDuration,
+      enableRain: imgEnableRain, rainIntensity: imgRainIntensity,
+      rainVariation: imgRainVariation,
     }
 
-    const params: PaneParams = {
-      width,
-      height,
-      lockAspectRatio,
-      cellWidth,
-      cellHeight,
-      contrast,
-      directionalContrast,
-      enableDirectionalContrast,
-      fontSize,
-      lineHeight,
-      color,
-      backgroundColor,
-      canvasWidth,
-      canvasHeight,
-      enableRipple,
-      rippleCount,
-      rippleSpeed,
-      rippleAmplitude,
-      rippleDecay,
-      rippleWavelength,
-      rippleDuration,
-      enableRain,
-      rainIntensity,
-      rainVariation,
-    }
-    paramsRef.current = params
-
-    const pane = new Pane({ container: paneContainerRef.current, title: 'Demo Settings', expanded: false }) as FolderApi
-    paneRef.current = pane as unknown as Pane
-
-    // Helper to create a binding with automatic state sync
-    const addBinding = <K extends keyof PaneParams>(
-      folder: FolderApi,
-      key: K,
-      options?: { min?: number; max?: number; step?: number; color?: { type: 'int' } },
-      onChange?: (value: PaneParams[K]) => void
-    ) => {
-      folder.addBinding(params, key, options).on('change', (ev: { value: PaneParams[K] }) => {
-        setters[key](ev.value)
-        onChange?.(ev.value)
-      })
-    }
+    const pane = new Pane({
+      container: imgPaneContainerRef.current,
+      title: 'AsciiImage Settings',
+      expanded: false,
+    }) as FolderApi
 
     // Helper to update canvas dimensions based on grid size
     const updateCanvasDimensions = (w: number, h: number) => {
       const charWidth = params.fontSize * 0.6
       const charHeight = params.fontSize * params.lineHeight
-      const newCanvasWidth = Math.round(w * charWidth)
-      const newCanvasHeight = Math.round(h * charHeight)
-      params.canvasWidth = newCanvasWidth
-      params.canvasHeight = newCanvasHeight
-      setCanvasWidth(newCanvasWidth)
-      setCanvasHeight(newCanvasHeight)
+      const newW = Math.round(w * charWidth)
+      const newH = Math.round(h * charHeight)
+      params.canvasWidth = newW
+      params.canvasHeight = newH
+      setImgCanvasWidth(newW)
+      setImgCanvasHeight(newH)
     }
 
     // Grid folder
     const gridFolder = pane.addFolder({ title: 'Grid' })
     const widthBinding = gridFolder.addBinding(params, 'width', { min: 20, max: 200, step: 1 })
     const heightBinding = gridFolder.addBinding(params, 'height', { min: 10, max: 100, step: 1 })
-    addBinding(gridFolder, 'lockAspectRatio')
-    addBinding(gridFolder, 'cellWidth', { min: 2, max: 20, step: 1 })
-    addBinding(gridFolder, 'cellHeight', { min: 4, max: 40, step: 1 })
+    addBinding(gridFolder, params, 'lockAspectRatio', setLockAspectRatio)
+    addBinding(gridFolder, params, 'cellWidth', setCellWidth, { min: 2, max: 20, step: 1 })
+    addBinding(gridFolder, params, 'cellHeight', setCellHeight, { min: 4, max: 40, step: 1 })
 
     widthBinding.on('change', (ev: { value: number }) => {
       setWidth(ev.value)
@@ -312,38 +282,120 @@ function App() {
 
     // Contrast folder
     const contrastFolder = pane.addFolder({ title: 'Contrast' })
-    addBinding(contrastFolder, 'contrast', { min: 1, max: 5, step: 0.1 })
-    addBinding(contrastFolder, 'enableDirectionalContrast')
-    addBinding(contrastFolder, 'directionalContrast', { min: 1, max: 5, step: 0.1 })
+    addBinding(contrastFolder, params, 'contrast', setContrast, { min: 1, max: 5, step: 0.1 })
+    addBinding(contrastFolder, params, 'enableDirectionalContrast', setEnableDirectionalContrast)
+    addBinding(contrastFolder, params, 'directionalContrast', setDirectionalContrast, { min: 1, max: 5, step: 0.1 })
 
     // Style folder
-    const styleFolder = pane.addFolder({ title: 'Style' })
-    addBinding(styleFolder, 'fontSize', { min: 4, max: 30, step: 1 })
-    addBinding(styleFolder, 'lineHeight', { min: 0.5, max: 2, step: 0.1 })
-    addBinding(styleFolder, 'color')
-    addBinding(styleFolder, 'backgroundColor')
-    addBinding(styleFolder, 'canvasWidth', { min: 200, max: 1200, step: 10 })
-    addBinding(styleFolder, 'canvasHeight', { min: 100, max: 800, step: 10 })
+    const styleFolder = addStyleFolder(pane, params, {
+      fontSize: setImgFontSize,
+      lineHeight: setImgLineHeight,
+      color: setImgColor,
+      backgroundColor: setImgBg,
+    })
+    addBinding(styleFolder, params, 'canvasWidth', setImgCanvasWidth, { min: 200, max: 1200, step: 10 })
+    addBinding(styleFolder, params, 'canvasHeight', setImgCanvasHeight, { min: 100, max: 800, step: 10 })
 
     // Ripple folder
-    const rippleFolder = pane.addFolder({ title: 'Ripple' })
-    addBinding(rippleFolder, 'enableRipple')
-    addBinding(rippleFolder, 'rippleCount', { min: 1, max: 5, step: 1 })
-    addBinding(rippleFolder, 'rippleSpeed', { min: 50, max: 500, step: 10 })
-    addBinding(rippleFolder, 'rippleAmplitude', { min: 0.1, max: 1, step: 0.05 })
-    addBinding(rippleFolder, 'rippleDecay', { min: 0.5, max: 5, step: 0.5 })
-    addBinding(rippleFolder, 'rippleWavelength', { min: 10, max: 100, step: 5 })
-    addBinding(rippleFolder, 'rippleDuration', { min: 500, max: 5000, step: 100 })
+    addRippleFolder(pane, params, {
+      enableRipple: setImgEnableRipple,
+      rippleCount: setImgRippleCount,
+      rippleSpeed: setImgRippleSpeed,
+      rippleAmplitude: setImgRippleAmplitude,
+      rippleDecay: setImgRippleDecay,
+      rippleWavelength: setImgRippleWavelength,
+      rippleDuration: setImgRippleDuration,
+    })
 
     // Rain folder
-    const rainFolder = pane.addFolder({ title: 'Rain' })
-    addBinding(rainFolder, 'enableRain')
-    addBinding(rainFolder, 'rainIntensity', { min: 1, max: 10, step: 0.5 })
-    addBinding(rainFolder, 'rainVariation', { min: 0, max: 1, step: 0.05 })
+    addRainFolder(pane, params, {
+      enableRain: setImgEnableRain,
+      rainIntensity: setImgRainIntensity,
+      rainVariation: setImgRainVariation,
+    })
 
     return () => pane.dispose()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // ── AsciiCanvas Tweakpane ─────────────────────────────────────────────
+  useEffect(() => {
+    if (!cvPaneContainerRef.current) return
+
+    const params: CanvasPaneParams = {
+      gridWidth: cvGridWidth, gridHeight: cvGridHeight,
+      canvasWidth: cvCanvasWidth, canvasHeight: cvCanvasHeight,
+      fontSize: cvFontSize, lineHeight: cvLineHeight,
+      color: cvColor, backgroundColor: cvBg,
+      enableRipple: cvEnableRipple, rippleCount: cvRippleCount,
+      rippleSpeed: cvRippleSpeed, rippleAmplitude: cvRippleAmplitude,
+      rippleDecay: cvRippleDecay, rippleWavelength: cvRippleWavelength,
+      rippleDuration: cvRippleDuration,
+      enableRain: cvEnableRain, rainIntensity: cvRainIntensity,
+      rainVariation: cvRainVariation,
+      enableMouseRipple: cvEnableMouseRipple,
+      mouseRippleSpeed: cvMouseSpeed,
+      mouseRippleAmplitude: cvMouseAmplitude,
+      mouseRippleDecay: cvMouseDecay,
+      mouseRippleWavelength: cvMouseWavelength,
+      mouseRippleDuration: cvMouseDuration,
+      mouseThrottleMs: cvMouseThrottle,
+    }
+
+    const pane = new Pane({
+      container: cvPaneContainerRef.current,
+      title: 'AsciiCanvas Settings',
+      expanded: false,
+    }) as FolderApi
+
+    // Grid folder
+    const gridFolder = pane.addFolder({ title: 'Grid' })
+    addBinding(gridFolder, params, 'gridWidth', setCvGridWidth, { min: 20, max: 200, step: 1 })
+    addBinding(gridFolder, params, 'gridHeight', setCvGridHeight, { min: 10, max: 80, step: 1 })
+
+    // Style folder
+    const styleFolder = addStyleFolder(pane, params, {
+      fontSize: setCvFontSize,
+      lineHeight: setCvLineHeight,
+      color: setCvColor,
+      backgroundColor: setCvBg,
+    })
+    addBinding(styleFolder, params, 'canvasWidth', setCvCanvasWidth, { min: 200, max: 1200, step: 10 })
+    addBinding(styleFolder, params, 'canvasHeight', setCvCanvasHeight, { min: 100, max: 800, step: 10 })
+
+    // Click ripple folder
+    addRippleFolder(pane, params, {
+      enableRipple: setCvEnableRipple,
+      rippleCount: setCvRippleCount,
+      rippleSpeed: setCvRippleSpeed,
+      rippleAmplitude: setCvRippleAmplitude,
+      rippleDecay: setCvRippleDecay,
+      rippleWavelength: setCvRippleWavelength,
+      rippleDuration: setCvRippleDuration,
+    })
+
+    // Mouse ripple folder
+    const mouseFolder = pane.addFolder({ title: 'Mouse Ripple' })
+    addBinding(mouseFolder, params, 'enableMouseRipple', setCvEnableMouseRipple)
+    addBinding(mouseFolder, params, 'mouseRippleSpeed', setCvMouseSpeed, { min: 50, max: 500, step: 10 })
+    addBinding(mouseFolder, params, 'mouseRippleAmplitude', setCvMouseAmplitude, { min: 0.05, max: 1, step: 0.05 })
+    addBinding(mouseFolder, params, 'mouseRippleDecay', setCvMouseDecay, { min: 0.5, max: 5, step: 0.5 })
+    addBinding(mouseFolder, params, 'mouseRippleWavelength', setCvMouseWavelength, { min: 5, max: 100, step: 5 })
+    addBinding(mouseFolder, params, 'mouseRippleDuration', setCvMouseDuration, { min: 200, max: 3000, step: 100 })
+    addBinding(mouseFolder, params, 'mouseThrottleMs', setCvMouseThrottle, { min: 16, max: 200, step: 1 })
+
+    // Rain folder
+    addRainFolder(pane, params, {
+      enableRain: setCvEnableRain,
+      rainIntensity: setCvRainIntensity,
+      rainVariation: setCvRainVariation,
+    })
+
+    return () => pane.dispose()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Code examples ─────────────────────────────────────────────────────
 
   const codeExample = `import { AsciiImage } from 'ascii-img-react';
 
@@ -358,31 +410,33 @@ function MyComponent() {
       contrast={${contrast}}
       directionalContrast={${directionalContrast}}
       enableDirectionalContrast={${enableDirectionalContrast}}
-      fontSize={${fontSize}}
-      lineHeight={${lineHeight}}
-      color="${color}"
-      backgroundColor="${backgroundColor}"
-      enableRipple={${enableRipple}}
-      rippleCount={${rippleCount}}
+      fontSize={${imgFontSize}}
+      lineHeight={${imgLineHeight}}
+      color="${imgColor}"
+      backgroundColor="${imgBg}"
+      enableRipple={${imgEnableRipple}}
+      rippleCount={${imgRippleCount}}
       rippleConfig={{
-        speed: ${rippleSpeed},
-        amplitude: ${rippleAmplitude},
-        decay: ${rippleDecay},
-        wavelength: ${rippleWavelength},
-        duration: ${rippleDuration},
+        speed: ${imgRippleSpeed},
+        amplitude: ${imgRippleAmplitude},
+        decay: ${imgRippleDecay},
+        wavelength: ${imgRippleWavelength},
+        duration: ${imgRippleDuration},
       }}
-      enableRain={${enableRain}}
+      enableRain={${imgEnableRain}}
       rainConfig={{
-        intensity: ${rainIntensity},
-        variation: ${rainVariation},
+        intensity: ${imgRainIntensity},
+        variation: ${imgRainVariation},
       }}
       style={{
-        width: ${canvasWidth},
-        height: ${canvasHeight},
+        width: ${imgCanvasWidth},
+        height: ${imgCanvasHeight},
       }}
     />
   );
 }`
+
+  // ── Render ─────────────────────────────────────────────────────────────
 
   return (
     <div className="app">
@@ -393,6 +447,8 @@ function MyComponent() {
         <pre>$ npm install ascii-img-react</pre>
         <p>Convert images to ASCII art with ripple animation effects. Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
       </div>
+
+      {/* ── AsciiImage demo ─────────────────────────────────────── */}
       <div className="image-thumbnails">
         {SAMPLE_IMAGES.map((src) => (
           <button
@@ -407,7 +463,7 @@ function MyComponent() {
       <p>Choose an image from the list above:</p>
 
       <div className="controls-container">
-        <div className="controls" ref={paneContainerRef} />
+        <div className="controls" ref={imgPaneContainerRef} />
       </div>
 
       <div className="ascii-container">
@@ -420,27 +476,27 @@ function MyComponent() {
           contrast={contrast}
           directionalContrast={directionalContrast}
           enableDirectionalContrast={enableDirectionalContrast}
-          fontSize={fontSize}
-          lineHeight={lineHeight}
-          color={color}
-          backgroundColor={backgroundColor}
-          enableRipple={enableRipple}
-          rippleCount={rippleCount}
+          fontSize={imgFontSize}
+          lineHeight={imgLineHeight}
+          color={imgColor}
+          backgroundColor={imgBg}
+          enableRipple={imgEnableRipple}
+          rippleCount={imgRippleCount}
           rippleConfig={{
-            speed: rippleSpeed,
-            amplitude: rippleAmplitude,
-            decay: rippleDecay,
-            wavelength: rippleWavelength,
-            duration: rippleDuration,
+            speed: imgRippleSpeed,
+            amplitude: imgRippleAmplitude,
+            decay: imgRippleDecay,
+            wavelength: imgRippleWavelength,
+            duration: imgRippleDuration,
           }}
-          enableRain={enableRain}
+          enableRain={imgEnableRain}
           rainConfig={{
-            intensity: rainIntensity,
-            variation: rainVariation,
+            intensity: imgRainIntensity,
+            variation: imgRainVariation,
           }}
           style={{
-            width: canvasWidth,
-            height: canvasHeight,
+            width: imgCanvasWidth,
+            height: imgCanvasHeight,
             padding: '15px',
             borderRadius: '15px',
           }}
@@ -448,6 +504,60 @@ function MyComponent() {
       </div>
       <p>Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
 
+      {/* ── AsciiCanvas demo ────────────────────────────────────── */}
+      <div className="canvas-demo-section">
+        <div className="content">
+          <h2>AsciiCanvas</h2>
+          <p>No image needed — just ripples, rain, and mouse tracking. Move your mouse over the canvas below.</p>
+        </div>
+
+        <div className="controls-container">
+          <div className="controls" ref={cvPaneContainerRef} />
+        </div>
+
+        <div className="ascii-container">
+          <AsciiCanvas
+            width={cvGridWidth}
+            height={cvGridHeight}
+            fontSize={cvFontSize}
+            lineHeight={cvLineHeight}
+            color={cvColor}
+            backgroundColor={cvBg}
+            enableRipple={cvEnableRipple}
+            rippleCount={cvRippleCount}
+            rippleConfig={{
+              speed: cvRippleSpeed,
+              amplitude: cvRippleAmplitude,
+              decay: cvRippleDecay,
+              wavelength: cvRippleWavelength,
+              duration: cvRippleDuration,
+            }}
+            enableRain={cvEnableRain}
+            rainConfig={{
+              intensity: cvRainIntensity,
+              variation: cvRainVariation,
+            }}
+            enableMouseRipple={cvEnableMouseRipple}
+            mouseRippleConfig={{
+              speed: cvMouseSpeed,
+              amplitude: cvMouseAmplitude,
+              decay: cvMouseDecay,
+              wavelength: cvMouseWavelength,
+              duration: cvMouseDuration,
+            }}
+            mouseThrottleMs={cvMouseThrottle}
+            style={{
+              width: cvCanvasWidth,
+              height: cvCanvasHeight,
+              padding: '15px',
+              borderRadius: '15px',
+            }}
+          />
+        </div>
+        <p>Move your mouse over the canvas, click for bigger ripples, or enable Rain mode</p>
+      </div>
+
+      {/* ── Code example ────────────────────────────────────────── */}
       <div className="code-section">
         <h2>Code</h2>
         <pre className="code-block">
