@@ -404,6 +404,7 @@ export const AsciiVideo = forwardRef<AsciiVideoHandle, AsciiVideoProps>(
         <video
           ref={videoRef}
           src={src}
+          crossOrigin="anonymous"
           autoPlay={autoPlay}
           loop={loop}
           muted={muted}
