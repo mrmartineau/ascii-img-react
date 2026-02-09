@@ -131,3 +131,101 @@ h1 {
 .syntax-bracket {
   color: #ffd700;
 }
+
+/* Mode toggle */
+.mode-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1.5rem 0 1rem;
+}
+
+.mode-button {
+  padding: 0.5rem 1.5rem;
+  border: 2px solid #444;
+  border-radius: 8px;
+  background: #222;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+
+.mode-button:hover {
+  border-color: #666;
+  background: #333;
+}
+
+.mode-button.active {
+  border-color: oklch(70.4% 0.14 182.503);
+  background: oklch(70.4% 0.14 182.503 / 0.15);
+  color: oklch(70.4% 0.14 182.503);
+}
+
+/* Video input section */
+.video-input-section {
+  max-width: 600px;
+  margin: 1.5rem auto 0;
+  text-align: left;
+}
+
+.video-url-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.video-url-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.video-url-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid #444;
+  border-radius: 8px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-size: 0.9rem;
+  font-family: 'Fira Code', 'Consolas', monospace;
+}
+
+.video-url-input:focus {
+  outline: none;
+  border-color: oklch(70.4% 0.14 182.503);
+}
+
+.video-controls-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 0.75rem;
+  align-items: center;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.video-controls-row label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+}
+
+.video-number-input {
+  width: 3.5rem;
+  padding: 0.25rem 0.4rem;
+  margin-left: 0.35rem;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-size: 0.85rem;
+}
+
+.video-placeholder {
+  padding: 3rem 2rem;
+  color: #666;
+  font-size: 1.1rem;
+}

@@ -17,3 +17,5 @@ export {
   type RippleState,
   type RainConfig,
 } from './ripple';
+export { renderAsciiFrame, type RenderOptions } from './render';
+export { type AsciiBaseProps, type AsciiData } from './types';

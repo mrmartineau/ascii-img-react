@@ -1,56 +1,12 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { sampleCell, sampleExternalCircles, type GridConfig, DEFAULT_GRID_CONFIG } from '../lib/sampling';
-import { cachedLookup } from '../lib/lookup';
-import { applyFullContrast } from '../lib/contrast';
-import { createRipple, createRainDrop, applyRippleToVector, pruneExpiredRipples, hasActiveRipples, type Ripple, type RippleConfig, type RainConfig, DEFAULT_RAIN_CONFIG } from '../lib/ripple';
+import { type GridConfig, DEFAULT_GRID_CONFIG } from '../lib/sampling';
+import { createRipple, createRainDrop, pruneExpiredRipples, hasActiveRipples, type Ripple, type RainConfig, DEFAULT_RAIN_CONFIG } from '../lib/ripple';
+import { renderAsciiFrame } from '../lib/render';
+import type { AsciiBaseProps, AsciiData } from '../lib/types';
 
-export interface AsciiImageProps {
+export interface AsciiImageProps extends AsciiBaseProps {
   /** Image source URL */
   src: string;
-  /** Width of the ASCII output in characters */
-  width?: number;
-  /** Height of the ASCII output in characters */
-  height?: number;
-  /** Cell width in pixels for sampling (default: 6) */
-  cellWidth?: number;
-  /** Cell height in pixels for sampling (default: 12) */
-  cellHeight?: number;
-  /** Global contrast enhancement exponent (default: 1.5) */
-  contrast?: number;
-  /** Directional contrast enhancement exponent (default: 2) */
-  directionalContrast?: number;
-  /** Enable directional contrast enhancement (default: true) */
-  enableDirectionalContrast?: boolean;
-  /** Font size for ASCII characters (default: 10) */
-  fontSize?: number;
-  /** Line height multiplier (default: 0.8) */
-  lineHeight?: number;
-  /** Enable ripple animation on click (default: true) */
-  enableRipple?: boolean;
-  /** Ripple configuration */
-  rippleConfig?: Partial<RippleConfig>;
-  /** Number of ripples to create per click (default: 1) */
-  rippleCount?: number;
-  /** Enable rain animation mode (default: false) */
-  enableRain?: boolean;
-  /** Rain animation configuration */
-  rainConfig?: Partial<RainConfig>;
-  /** CSS class name for the container */
-  className?: string;
-  /** Custom styles for the container */
-  style?: React.CSSProperties;
-  /** Callback when clicked */
-  onClick?: (event: React.MouseEvent) => void;
-  /** Color of ASCII characters (default: inherit) */
-  color?: string;
-  /** Background color (default: transparent) */
-  backgroundColor?: string;
-}
-
-interface AsciiData {
-  chars: string[][];
-  cols: number;
-  rows: number;
 }
 
 /**
@@ -91,6 +47,12 @@ export function AsciiImage({
     samplesPerCircle: 9,
     circleRadius: 0.25,
   }), [cellWidth, cellHeight]);
+
+  const renderOptions = useMemo(() => ({
+    contrast,
+    directionalContrast,
+    enableDirectionalContrast,
+  }), [contrast, directionalContrast, enableDirectionalContrast]);
 
   // Load image and extract pixel data
   useEffect(() => {
@@ -148,48 +110,8 @@ export function AsciiImage({
     currentRipples: Ripple[],
     currentTime: number
   ): AsciiData => {
-    const cols = Math.floor(data.width / gridConfig.cellWidth);
-    const rows = Math.floor(data.height / gridConfig.cellHeight);
-
-    const chars: string[][] = [];
-
-    for (let row = 0; row < rows; row++) {
-      const rowChars: string[] = [];
-
-      for (let col = 0; col < cols; col++) {
-        // Sample internal vector
-        let vector = sampleCell(data, col, row, gridConfig);
-
-        // Sample external vector for directional contrast
-        const externalVector = enableDirectionalContrast
-          ? sampleExternalCircles(data, col, row, gridConfig)
-          : null;
-
-        // Apply contrast enhancement
-        vector = applyFullContrast(
-          vector,
-          externalVector,
-          contrast,
-          enableDirectionalContrast ? directionalContrast : 1
-        );
-
-        // Apply ripple effect
-        if (currentRipples.length > 0) {
-          const cellCenterX = (col + 0.5) * gridConfig.cellWidth;
-          const cellCenterY = (row + 0.5) * gridConfig.cellHeight;
-          vector = applyRippleToVector(vector, cellCenterX, cellCenterY, currentRipples, currentTime);
-        }
-
-        // Find best matching character
-        const char = cachedLookup.findBest(vector);
-        rowChars.push(char);
-      }
-
-      chars.push(rowChars);
-    }
-
-    return { chars, cols, rows };
-  }, [gridConfig, contrast, directionalContrast, enableDirectionalContrast]);
+    return renderAsciiFrame(data, gridConfig, renderOptions, currentRipples, currentTime);
+  }, [gridConfig, renderOptions]);
 
   // Compute static ASCII data from image (no ripples)
   const staticAsciiData = useMemo(() => {
