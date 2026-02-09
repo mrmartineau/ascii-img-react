@@ -238,10 +238,11 @@ export function AsciiCanvas({
     [enableRipple, rippleConfig, rippleCount, onClick, toGridCoords],
   );
 
-  // Mouse move handler for mouse-tracking ripples
-  // Ripple origin is offset in the direction of travel so the wave
-  // emanates from ahead of the cursor (e.g. moving east → ripple starts
-  // to the east of the cursor position).
+  // Mouse move handler for mouse-tracking ripples.
+  // The ripple origin is placed *behind* the cursor (opposite to travel
+  // direction) so the expanding wave front reaches the cursor first.
+  // E.g. moving east → origin is to the west → wave expands eastward
+  // through the cursor position.
   const handleMouseMove = useCallback(
     (event: React.MouseEvent) => {
       if (!enableMouseRipple) return;
@@ -256,7 +257,6 @@ export function AsciiCanvas({
       if (now - lastMouseRippleTimeRef.current < mouseThrottleMs) return;
       lastMouseRippleTimeRef.current = now;
 
-      // Calculate ripple origin offset in the direction of mouse travel
       let originX = pos.x;
       let originY = pos.y;
 
@@ -266,10 +266,10 @@ export function AsciiCanvas({
         const mag = Math.sqrt(dx * dx + dy * dy);
 
         if (mag > 0.5) {
-          // Offset distance scales with cell size for a consistent feel
+          // Place origin behind the cursor so the wave front starts at the cursor
           const offset = (cellWidth + cellHeight) * 0.8;
-          originX = pos.x + (dx / mag) * offset;
-          originY = pos.y + (dy / mag) * offset;
+          originX = pos.x - (dx / mag) * offset;
+          originY = pos.y - (dy / mag) * offset;
         }
       }
 
