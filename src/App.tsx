@@ -115,7 +115,7 @@ type DemoMode = 'image' | 'video'
 function App() {
   const [mode, setMode] = useState<DemoMode>('image')
   const [imageUrl, setImageUrl] = useState(SAMPLE_IMAGES[0])
-  const [videoUrl, setVideoUrl] = useState('')
+  const [videoUrl, setVideoUrl] = useState('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4')
   const [videoFps, setVideoFps] = useState(15)
   const [videoAutoPlay, setVideoAutoPlay] = useState(true)
   const [videoLoop, setVideoLoop] = useState(true)
