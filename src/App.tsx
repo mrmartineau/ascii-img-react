@@ -56,7 +56,7 @@ function highlightCode(code: string): React.ReactNode[] {
     let match
     while ((match = regex.exec(code)) !== null) {
       const captureGroup = match[1] || match[0]
-      const start = match.index + (match[0].indexOf(captureGroup))
+      const start = match.index + match[0].indexOf(captureGroup)
       allMatches.push({
         match: captureGroup,
         className,
@@ -92,10 +92,12 @@ function highlightCode(code: string): React.ReactNode[] {
 
   return tokens.map((t, i) =>
     t.className ? (
-      <span key={i} className={`syntax-${t.className}`}>{t.text}</span>
+      <span key={i} className={`syntax-${t.className}`}>
+        {t.text}
+      </span>
     ) : (
       <span key={i}>{t.text}</span>
-    )
+    ),
   )
 }
 
@@ -188,7 +190,6 @@ function App() {
     lockAspectRatioRef.current = lockAspectRatio
   }, [lockAspectRatio])
 
-
   // Initialize Tweakpane once
   useEffect(() => {
     if (!paneContainerRef.current) return
@@ -248,7 +249,11 @@ function App() {
     }
     paramsRef.current = params
 
-    const pane = new Pane({ container: paneContainerRef.current, title: 'Demo Settings', expanded: false }) as FolderApi
+    const pane = new Pane({
+      container: paneContainerRef.current,
+      title: 'Demo Settings',
+      expanded: false,
+    }) as FolderApi
     paneRef.current = pane as unknown as Pane
 
     // Helper to create a binding with automatic state sync
@@ -256,7 +261,7 @@ function App() {
       folder: FolderApi,
       key: K,
       options?: { min?: number; max?: number; step?: number; color?: { type: 'int' } },
-      onChange?: (value: PaneParams[K]) => void
+      onChange?: (value: PaneParams[K]) => void,
     ) => {
       folder.addBinding(params, key, options).on('change', (ev: { value: PaneParams[K] }) => {
         setters[key](ev.value)
@@ -388,17 +393,24 @@ function MyComponent() {
     <div className="app">
       <div className="content">
         <h1>ascii-img-react</h1>
-        <p>by <a href="https://zander.wtf">Zander Martineau</a></p>
-        <p><a href="https://github.com/mrmartineau/ascii-img-react">GitHub Repo</a></p>
+        <p>
+          by <a href="https://zander.wtf">Zander Martineau</a>
+        </p>
+        <p>
+          <a href="https://github.com/mrmartineau/ascii-img-react">GitHub Repo</a>
+        </p>
         <pre>$ npm install ascii-img-react</pre>
-        <p>Convert images to ASCII art with ripple animation effects. Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
+        <p>
+          Convert images to ASCII art with ripple animation effects. Click on the image to trigger
+          ripple animation, or enable Rain mode for automatic raindrops
+        </p>
       </div>
       <div className="image-thumbnails">
         {SAMPLE_IMAGES.map((src) => (
           <button
-          key={src}
-          className={`thumbnail ${imageUrl === src ? 'active' : ''}`}
-          onClick={() => setImageUrl(src)}
+            key={src}
+            className={`thumbnail ${imageUrl === src ? 'active' : ''}`}
+            onClick={() => setImageUrl(src)}
           >
             <img src={src} alt="" />
           </button>
@@ -446,7 +458,9 @@ function MyComponent() {
           }}
         />
       </div>
-      <p>Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops</p>
+      <p>
+        Click on the image to trigger ripple animation, or enable Rain mode for automatic raindrops
+      </p>
 
       <div className="code-section">
         <h2>Code</h2>

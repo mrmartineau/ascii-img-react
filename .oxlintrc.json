@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxlint/configuration_schema.json",
+  "extends": ["./node_modules/@mrmartineau/kit/src/oxlint/.oxlintrc.json"],
+  "ignorePatterns": ["dist"],
+  "rules": {
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
+    "typescript/consistent-type-imports": "warn",
+    "jsx-a11y/control-has-associated-label": "warn",
+    "jsx-a11y/click-events-have-key-events": "warn",
+    "jsx-a11y/no-noninteractive-element-interactions": "warn"
+  }
+}

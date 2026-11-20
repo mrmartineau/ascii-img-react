@@ -9,7 +9,7 @@ bun install          # Install dependencies
 bun run dev          # Start dev server with hot reload
 bun run build        # Build demo app (tsc + vite)
 bun run build:lib    # Build library for npm publishing
-bun run lint         # Run ESLint on TypeScript files
+bun run lint         # Run oxlint on TypeScript files
 bun run preview      # Preview production build
 ```
 

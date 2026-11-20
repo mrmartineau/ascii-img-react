@@ -1,19 +1,19 @@
 /**
  * ASCII Character Shape Vectors
- * 
+ *
  * Each character has a 6D shape vector representing its visual density
  * in 6 sampling regions (staggered 2x3 grid):
- * 
+ *
  *   [0]   [1]    (top row, left slightly lower)
  *   [2]   [3]    (middle row)
  *   [4]   [5]    (bottom row, left slightly higher)
- * 
+ *
  * Values are normalized 0-1 representing relative density.
  */
 
 export interface CharacterData {
-  char: string;
-  vector: number[];
+  char: string
+  vector: number[]
 }
 
 // Printable ASCII characters (32-126) with pre-computed shape vectors
@@ -53,7 +53,7 @@ export const CHARACTERS: CharacterData[] = [
   { char: '%', vector: [0.5, 0.3, 0.4, 0.4, 0.3, 0.5] },
   { char: '&', vector: [0.5, 0.4, 0.5, 0.5, 0.6, 0.5] },
   { char: '@', vector: [0.6, 0.7, 0.7, 0.6, 0.6, 0.7] },
-  
+
   // Numbers
   { char: '0', vector: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5] },
   { char: '1', vector: [0.3, 0.3, 0.2, 0.3, 0.3, 0.4] },
@@ -65,7 +65,7 @@ export const CHARACTERS: CharacterData[] = [
   { char: '7', vector: [0.5, 0.5, 0.2, 0.4, 0.2, 0.4] },
   { char: '8', vector: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5] },
   { char: '9', vector: [0.5, 0.5, 0.4, 0.5, 0.5, 0.4] },
-  
+
   // Uppercase letters
   { char: 'A', vector: [0.4, 0.4, 0.6, 0.6, 0.5, 0.5] },
   { char: 'B', vector: [0.6, 0.5, 0.6, 0.5, 0.6, 0.5] },
@@ -93,7 +93,7 @@ export const CHARACTERS: CharacterData[] = [
   { char: 'X', vector: [0.5, 0.5, 0.4, 0.4, 0.5, 0.5] },
   { char: 'Y', vector: [0.5, 0.5, 0.4, 0.4, 0.3, 0.3] },
   { char: 'Z', vector: [0.5, 0.5, 0.4, 0.4, 0.5, 0.5] },
-  
+
   // Lowercase letters
   { char: 'a', vector: [0.2, 0.3, 0.4, 0.5, 0.5, 0.5] },
   { char: 'b', vector: [0.5, 0.2, 0.5, 0.4, 0.5, 0.4] },
@@ -121,28 +121,28 @@ export const CHARACTERS: CharacterData[] = [
   { char: 'x', vector: [0.2, 0.2, 0.3, 0.3, 0.4, 0.4] },
   { char: 'y', vector: [0.2, 0.2, 0.4, 0.4, 0.3, 0.5] },
   { char: 'z', vector: [0.2, 0.3, 0.3, 0.4, 0.4, 0.3] },
-];
+]
 
 /**
  * Normalize character vectors so components span 0-1 range
  */
 export function normalizeCharacterVectors(characters: CharacterData[]): CharacterData[] {
   // Find max value for each component
-  const maxValues = [0, 0, 0, 0, 0, 0];
+  const maxValues = [0, 0, 0, 0, 0, 0]
   for (const { vector } of characters) {
     for (let i = 0; i < 6; i++) {
       if (vector[i] > maxValues[i]) {
-        maxValues[i] = vector[i];
+        maxValues[i] = vector[i]
       }
     }
   }
-  
+
   // Normalize each vector
   return characters.map(({ char, vector }) => ({
     char,
     vector: vector.map((v, i) => (maxValues[i] > 0 ? v / maxValues[i] : 0)),
-  }));
+  }))
 }
 
 // Pre-normalized characters for lookup
-export const NORMALIZED_CHARACTERS = normalizeCharacterVectors(CHARACTERS);
+export const NORMALIZED_CHARACTERS = normalizeCharacterVectors(CHARACTERS)
